@@ -1,12 +1,17 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Coffee, Car, Sparkles, ShoppingBag } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Coffee, Car, Sparkles, ShoppingBag, TrendingUp } from "lucide-react";
+import { useEffect, useImperativeHandle, useState, forwardRef } from "react";
 import { Plus, X } from "lucide-react";
 import type { Category } from "@/lib/finance-data";
 
 interface QuickActionFabProps {
   onQuickAdd: (category: Category, amount: number, title: string) => void;
+  onAddIncome?: (amount: number, title: string) => void;
   warning?: boolean;
+}
+
+export interface QuickActionFabHandle {
+  open: (mode?: "expense" | "income") => void;
 }
 
 const quickItems: { key: Category; label: string; icon: React.ElementType; color: string }[] = [
@@ -16,15 +21,25 @@ const quickItems: { key: Category; label: string; icon: React.ElementType; color
   { key: "other", label: "Outros", icon: ShoppingBag, color: "oklch(0.78 0.16 70)" },
 ];
 
-export function QuickActionFab({ onQuickAdd, warning }: QuickActionFabProps) {
+export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabProps>(
+  function QuickActionFab({ onQuickAdd, onAddIncome, warning }, ref) {
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"expense" | "income">("expense");
   const [selected, setSelected] = useState<Category | null>(null);
   const [amount, setAmount] = useState("");
+
+  useImperativeHandle(ref, () => ({
+    open: (m = "expense") => {
+      setMode(m);
+      setOpen(true);
+    },
+  }));
 
   useEffect(() => {
     if (!open) {
       setSelected(null);
       setAmount("");
+      setMode("expense");
     }
   }, [open]);
 
