@@ -98,15 +98,15 @@ function Index() {
 
       {/* Tabs */}
       <section className="mt-8">
-        <div className="mb-5 inline-flex rounded-2xl bg-muted/40 p-1 ring-1 ring-border">
+        <div className="mb-5 flex w-full rounded-2xl bg-muted/40 p-1 ring-1 ring-border sm:inline-flex sm:w-auto">
           {([
-            { k: "timeline", label: "Timeline" },
-            { k: "fixed", label: "Assinaturas & Receitas" },
+            { k: "timeline", label: "Timeline", short: "Timeline" },
+            { k: "fixed", label: "Assinaturas & Receitas", short: "Fixos" },
           ] as const).map((t) => (
             <button
               key={t.k}
               onClick={() => setTab(t.k)}
-              className={`relative rounded-xl px-4 py-2 text-xs font-medium transition ${
+              className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-medium transition sm:flex-none sm:px-4 ${
                 tab === t.k ? "text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -117,10 +117,9 @@ function Index() {
                   transition={{ type: "spring", stiffness: 320, damping: 30 }}
                 />
               )}
-              <span
-                className={`relative ${tab === t.k ? "text-primary-foreground" : ""}`}
-              >
-                {t.label}
+              <span className={`relative ${tab === t.k ? "text-primary-foreground" : ""}`}>
+                <span className="sm:hidden">{t.short}</span>
+                <span className="hidden sm:inline">{t.label}</span>
               </span>
             </button>
           ))}
