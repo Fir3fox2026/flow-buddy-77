@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, AlertTriangle } from "lucide-react";
 import { useFinance } from "@/hooks/use-finance";
-import { FlowStreamgraph } from "@/components/finance/FlowStreamgraph";
+import { MonthProgressBar } from "@/components/finance/MonthProgressBar";
 import { Timeline } from "@/components/finance/Timeline";
 import { QuickActionFab } from "@/components/finance/QuickActionFab";
 import { FixedManager } from "@/components/finance/FixedManager";
@@ -73,10 +73,10 @@ function Index() {
         animate={{ opacity: 1, y: 0 }}
         className="rounded-3xl bg-gradient-card p-6 shadow-elegant ring-1 ring-border"
       >
-        <FlowStreamgraph
-          data={flowSeries}
+        <MonthProgressBar
           currentBalance={stats.currentBalance}
           projectedBalance={stats.projectedBalance}
+          daysLeft={stats.daysLeft}
           warning={stats.atypical}
         />
       </motion.section>
