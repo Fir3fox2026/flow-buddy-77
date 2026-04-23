@@ -13,6 +13,8 @@ export default defineConfig({
       VitePWA({
         registerType: "prompt",
         injectRegister: false,
+        strategies: "generateSW",
+        filename: "sw.js",
         // Never run a service worker in dev — would interfere with HMR & Lovable preview.
         devOptions: {
           enabled: false,
