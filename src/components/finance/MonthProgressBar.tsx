@@ -24,23 +24,27 @@ export function MonthProgressBar({
 
   return (
     <div className="w-full">
-      <div className="mb-5 flex items-end justify-between gap-4">
+      <div className="mb-5 flex flex-col gap-3 xs:flex-row xs:items-end xs:justify-between sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Saldo atual</p>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">
+            Saldo atual
+          </p>
           <motion.p
             key={currentBalance}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-semibold tracking-tight text-gradient-primary"
+            className="text-3xl font-semibold tracking-tight text-gradient-primary sm:text-4xl"
           >
             {formatBRL(currentBalance)}
           </motion.p>
         </div>
-        <div className="text-right">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+        <div className="text-left sm:text-right">
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">
             Previsto fim do mês
           </p>
-          <p className="text-xl font-medium text-foreground/80">{formatBRL(projectedBalance)}</p>
+          <p className="text-lg font-medium text-foreground/80 sm:text-xl">
+            {formatBRL(projectedBalance)}
+          </p>
         </div>
       </div>
 
