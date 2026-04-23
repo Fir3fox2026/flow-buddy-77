@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   initialTransactions,
   signedAmount,
@@ -8,8 +8,52 @@ import {
   type Transaction,
 } from "@/lib/finance-data";
 
+const STORAGE_KEY = "fluxo:transactions:v1";
+const ONBOARDING_KEY = "fluxo:onboarding:v1";
+
+function loadTransactions(): Transaction[] {
+  if (typeof window === "undefined") return initialTransactions;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return initialTransactions;
+    const parsed = JSON.parse(raw) as Transaction[];
+    if (!Array.isArray(parsed)) return initialTransactions;
+    return parsed;
+  } catch {
+    return initialTransactions;
+  }
+}
+
 export function useFinance() {
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [hydrated, setHydrated] = useState(false);
+  const [onboarded, setOnboarded] = useState(true);
+
+  // Hydrate once on the client
+  useEffect(() => {
+    setTransactions(loadTransactions());
+    setOnboarded(window.localStorage.getItem(ONBOARDING_KEY) === "1");
+    setHydrated(true);
+  }, []);
+
+  // Auto-save on every change after hydration
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+    } catch {
+      /* quota or privacy mode — silently ignore */
+    }
+  }, [transactions, hydrated]);
+
+  const completeOnboarding = useCallback(() => {
+    try {
+      window.localStorage.setItem(ONBOARDING_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    setOnboarded(true);
+  }, []);
 
   const addTransaction = useCallback((tx: Omit<Transaction, "id" | "date" | "status">) => {
     setTransactions((prev) => [
@@ -127,5 +171,14 @@ export function useFinance() {
     });
   }, [transactions]);
 
-  return { transactions, addTransaction, markPaid, stats, flowSeries };
+  return {
+    transactions,
+    addTransaction,
+    markPaid,
+    stats,
+    flowSeries,
+    hydrated,
+    onboarded,
+    completeOnboarding,
+  };
 }
