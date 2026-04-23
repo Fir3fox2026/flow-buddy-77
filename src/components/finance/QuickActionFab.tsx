@@ -137,7 +137,8 @@ export function QuickActionFab({ onQuickAdd, warning }: QuickActionFabProps) {
         onClick={() => setOpen((v) => !v)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.92 }}
-        className={`fixed bottom-8 left-1/2 z-50 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground shadow-glow ${warning ? "animate-pulse-glow" : ""}`}
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1.75rem)" }}
+        className={`fixed left-1/2 z-50 flex h-16 w-16 -translate-x-1/2 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground shadow-glow ${warning ? "animate-pulse-glow" : ""}`}
         aria-label="Adicionar"
       >
         <motion.div animate={{ rotate: open ? 45 : 0 }} transition={{ type: "spring", stiffness: 280 }}>
