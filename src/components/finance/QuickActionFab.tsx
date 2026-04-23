@@ -57,7 +57,8 @@ export function QuickActionFab({ onQuickAdd, warning }: QuickActionFabProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 260, damping: 26 }}
-            className="fixed bottom-28 left-1/2 z-50 w-[min(92vw,420px)] -translate-x-1/2 rounded-3xl bg-gradient-card p-6 shadow-elegant ring-1 ring-border"
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 7rem)" }}
+            className="fixed left-1/2 z-50 w-[min(92vw,420px)] -translate-x-1/2 rounded-3xl bg-gradient-card p-5 shadow-elegant ring-1 ring-border sm:p-6"
           >
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-base font-semibold">Registrar gasto</h3>
