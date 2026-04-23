@@ -1,5 +1,7 @@
-// PWA service worker registration with safety guards for Lovable preview/iframe.
-// Returns an updater function the UI can call when the user accepts the update.
+// Manual PWA service worker registration with safety guards for Lovable preview/iframe.
+// Why manual: vite-plugin-pwa does not reliably emit a sw.js into the client bundle
+// when used with the Lovable TanStack Start config (multi-environment build), so we
+// ship a hand-written /public/sw.js and register it ourselves.
 
 export type PwaUpdateHandlers = {
   onNeedRefresh: (update: () => Promise<void>) => void;
@@ -9,7 +11,6 @@ export type PwaUpdateHandlers = {
 function isUnsafeContext(): boolean {
   if (typeof window === "undefined") return true;
 
-  // Inside an iframe? Lovable preview runs in one and SWs misbehave there.
   let inIframe = false;
   try {
     inIframe = window.self !== window.top;
@@ -19,45 +20,82 @@ function isUnsafeContext(): boolean {
 
   const host = window.location.hostname;
   const isPreviewHost =
-    host.includes("id-preview--") ||
-    host.includes("lovableproject.com") ||
-    host.includes("lovable.app") === false && host.includes("lovable") === true;
+    host.includes("id-preview--") || host.includes("lovableproject.com");
 
   return inIframe || isPreviewHost;
 }
 
+async function unregisterAll(): Promise<void> {
+  if (!("serviceWorker" in navigator)) return;
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map((r) => r.unregister()));
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function registerPwa(handlers: PwaUpdateHandlers): Promise<void> {
   if (typeof window === "undefined") return;
+  if (!("serviceWorker" in navigator)) return;
 
-  // In any preview/iframe context, proactively unregister and skip.
+  // Skip and proactively clean up in unsafe contexts (Lovable preview, iframes).
   if (isUnsafeContext()) {
-    if ("serviceWorker" in navigator) {
-      try {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map((r) => r.unregister()));
-      } catch {
-        /* ignore */
-      }
-    }
+    await unregisterAll();
     return;
   }
 
-  if (!("serviceWorker" in navigator)) return;
+  // Skip in dev — keeps HMR clean. Production builds set import.meta.env.PROD = true.
+  if (!import.meta.env.PROD) return;
 
   try {
-    // Dynamic import so vite-plugin-pwa virtual module is only pulled in when used.
-    const { registerSW } = await import("virtual:pwa-register");
-    const updateSW = registerSW({
-      onNeedRefresh() {
-        handlers.onNeedRefresh(async () => {
-          await updateSW(true);
-        });
-      },
-      onOfflineReady() {
-        handlers.onOfflineReady();
-      },
+    const registration = await navigator.serviceWorker.register("/sw.js", {
+      scope: "/",
     });
+
+    // If a worker is already waiting (user opened the app and a new SW had been
+    // installed in a previous session), surface the update prompt immediately.
+    if (registration.waiting) {
+      handlers.onNeedRefresh(() => activateWaiting(registration));
+    }
+
+    if (registration.active && !navigator.serviceWorker.controller) {
+      handlers.onOfflineReady();
+    }
+
+    registration.addEventListener("updatefound", () => {
+      const newWorker = registration.installing;
+      if (!newWorker) return;
+      newWorker.addEventListener("statechange", () => {
+        if (newWorker.state === "installed") {
+          if (navigator.serviceWorker.controller) {
+            handlers.onNeedRefresh(() => activateWaiting(registration));
+          } else {
+            handlers.onOfflineReady();
+          }
+        }
+      });
+    });
+
+    // Reload exactly once when the new SW takes control.
+    let reloading = false;
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloading) return;
+      reloading = true;
+      window.location.reload();
+    });
+
+    // Periodically check for updates so the prompt can appear without a manual reload.
+    setInterval(() => {
+      registration.update().catch(() => undefined);
+    }, 60 * 60 * 1000);
   } catch {
-    // virtual module unavailable (e.g. dev build) — silently no-op
+    /* registration failed — silently no-op */
   }
+}
+
+async function activateWaiting(registration: ServiceWorkerRegistration): Promise<void> {
+  const waiting = registration.waiting;
+  if (!waiting) return;
+  waiting.postMessage({ type: "SKIP_WAITING" });
 }
