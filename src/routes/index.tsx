@@ -83,17 +83,6 @@ function Index() {
             setTimeout(() => fabRef.current?.open("expense"), 50);
           }}
         />
-        {/* Mount the FAB so the ref exists for deep-linked actions from onboarding */}
-        <QuickActionFab
-          ref={fabRef}
-          warning={stats.atypical}
-          onQuickAdd={(category, amount, title) =>
-            addTransaction({ title, amount, category, kind: "variable" })
-          }
-          onAddIncome={(amount, title) =>
-            addTransaction({ title, amount, category: "income", kind: "income" })
-          }
-        />
       </>
     );
   }
