@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, AlertTriangle } from "lucide-react";
+import { AlertTriangle, ChevronDown } from "lucide-react";
 import { useFinance } from "@/hooks/use-finance";
+import { useProfile } from "@/hooks/use-profile";
 import { MonthProgressBar } from "@/components/finance/MonthProgressBar";
 import { Timeline } from "@/components/finance/Timeline";
 import {
@@ -13,6 +14,7 @@ import { FixedManager } from "@/components/finance/FixedManager";
 import { StatCards } from "@/components/finance/StatCards";
 import { Onboarding } from "@/components/finance/Onboarding";
 import { UpdatePrompt } from "@/components/finance/UpdatePrompt";
+import { ProfileSheet } from "@/components/finance/ProfileSheet";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -38,12 +40,15 @@ function Index() {
     transactions,
     addTransaction,
     markPaid,
+    removeTransaction,
     stats,
     hydrated,
     onboarded,
     completeOnboarding,
   } = useFinance();
+  const { profile, updateProfile } = useProfile();
   const [tab, setTab] = useState<"timeline" | "fixed">("timeline");
+  const [profileOpen, setProfileOpen] = useState(false);
   const fabRef = useRef<QuickActionFabHandle>(null);
 
   // Apply warning theme on the root
@@ -105,17 +110,27 @@ function Index() {
       >
         {/* Header */}
         <header className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary shadow-glow">
-              <Sparkles size={18} className="text-primary-foreground" />
+          <button
+            onClick={() => setProfileOpen(true)}
+            className="group flex min-w-0 items-center gap-3 rounded-2xl px-1 py-1 -ml-1 transition active:scale-[0.98]"
+            aria-label="Abrir perfil"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-primary text-xl shadow-glow">
+              <span aria-hidden>{profile.avatar}</span>
             </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-lg font-semibold tracking-tight">Fluxo</h1>
-              <p className="truncate text-xs text-muted-foreground">
-                Suas finanças em movimento
-              </p>
+            <div className="min-w-0 text-left">
+              <div className="flex items-center gap-1">
+                <h1 className="truncate text-sm font-semibold tracking-tight">
+                  Olá, {profile.name}
+                </h1>
+                <ChevronDown
+                  size={14}
+                  className="shrink-0 text-muted-foreground transition group-hover:text-foreground"
+                />
+              </div>
+              <p className="truncate text-xs text-muted-foreground">Suas finanças em movimento</p>
             </div>
-          </div>
+          </button>
           <AnimatePresence>
             {stats.atypical && (
               <motion.div
@@ -197,7 +212,7 @@ function Index() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
-                <Timeline transactions={transactions} />
+                <Timeline transactions={transactions} onRemove={removeTransaction} />
               </motion.div>
             ) : (
               <motion.div
@@ -223,6 +238,13 @@ function Index() {
         onAddIncome={(amount, title) =>
           addTransaction({ title, amount, category: "income", kind: "income" })
         }
+      />
+
+      <ProfileSheet
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        profile={profile}
+        onUpdate={updateProfile}
       />
     </>
   );
