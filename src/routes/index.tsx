@@ -211,7 +211,11 @@ function Index() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
-                <FixedManager transactions={transactions} onConfirm={markPaid} />
+                <FixedManager
+                  transactions={transactions}
+                  onConfirm={markPaid}
+                  onRemove={removeTransaction}
+                />
               </motion.div>
             )}
           </AnimatePresence>
