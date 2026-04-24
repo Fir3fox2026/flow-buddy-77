@@ -73,6 +73,10 @@ export function useFinance() {
     );
   }, []);
 
+  const removeTransaction = useCallback((id: string) => {
+    setTransactions((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
   const stats = useMemo(() => {
     const now = new Date();
     const som = startOfMonth(now);
@@ -175,6 +179,7 @@ export function useFinance() {
     transactions,
     addTransaction,
     markPaid,
+    removeTransaction,
     stats,
     flowSeries,
     hydrated,
