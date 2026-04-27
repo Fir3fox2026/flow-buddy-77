@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./use-auth";
 
 const STORAGE_KEY = "fluxo:profile:v1";
 
 export interface Profile {
   name: string;
-  avatar: string; // emoji
+  avatar: string;
 }
 
 const DEFAULT_PROFILE: Profile = { name: "Você", avatar: "🌊" };
@@ -26,8 +28,10 @@ function loadProfile(): Profile {
 }
 
 export function useProfile() {
+  const { user, hydrated: authHydrated } = useAuth();
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [hydrated, setHydrated] = useState(false);
+  const lastSyncedUserId = useRef<string | null>(null);
 
   useEffect(() => {
     setProfile(loadProfile());
@@ -43,9 +47,48 @@ export function useProfile() {
     }
   }, [profile, hydrated]);
 
-  const updateProfile = useCallback((patch: Partial<Profile>) => {
-    setProfile((prev) => ({ ...prev, ...patch }));
-  }, []);
+  // Pull from cloud on login
+  useEffect(() => {
+    if (!authHydrated || !hydrated) return;
+    if (!user) {
+      lastSyncedUserId.current = null;
+      return;
+    }
+    if (lastSyncedUserId.current === user.id) return;
+    lastSyncedUserId.current = user.id;
+
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("name,avatar")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data) {
+        setProfile({ name: data.name, avatar: data.avatar });
+      } else {
+        // Push local to cloud
+        await supabase.from("profiles").upsert({ id: user.id, ...profile });
+      }
+    })();
+  }, [user, authHydrated, hydrated, profile]);
+
+  const updateProfile = useCallback(
+    (patch: Partial<Profile>) => {
+      setProfile((prev) => {
+        const next = { ...prev, ...patch };
+        if (user) {
+          supabase
+            .from("profiles")
+            .upsert({ id: user.id, ...next })
+            .then(({ error }) => {
+              if (error) console.warn("Cloud profile update failed", error);
+            });
+        }
+        return next;
+      });
+    },
+    [user],
+  );
 
   return { profile, updateProfile, hydrated };
 }

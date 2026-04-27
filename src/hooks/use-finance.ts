@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   initialTransactions,
   signedAmount,
@@ -7,6 +8,7 @@ import {
   endOfMonth,
   type Transaction,
 } from "@/lib/finance-data";
+import { useAuth } from "./use-auth";
 
 const STORAGE_KEY = "fluxo:transactions:v1";
 const ONBOARDING_KEY = "fluxo:onboarding:v1";
@@ -24,10 +26,48 @@ function loadTransactions(): Transaction[] {
   }
 }
 
+interface CloudRow {
+  client_id: string;
+  title: string;
+  amount: number;
+  kind: Transaction["kind"];
+  category: Transaction["category"];
+  date: string;
+  status: Transaction["status"];
+}
+
+function txToRow(t: Transaction, userId: string) {
+  return {
+    user_id: userId,
+    client_id: t.id,
+    title: t.title,
+    amount: t.amount,
+    kind: t.kind,
+    category: t.category,
+    date: t.date,
+    status: t.status,
+  };
+}
+
+function rowToTx(r: CloudRow): Transaction {
+  return {
+    id: r.client_id,
+    title: r.title,
+    amount: Number(r.amount),
+    kind: r.kind,
+    category: r.category,
+    date: r.date,
+    status: r.status,
+  };
+}
+
 export function useFinance() {
+  const { user, hydrated: authHydrated } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [hydrated, setHydrated] = useState(false);
   const [onboarded, setOnboarded] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const lastSyncedUserId = useRef<string | null>(null);
 
   // Hydrate once on the client
   useEffect(() => {
@@ -36,15 +76,63 @@ export function useFinance() {
     setHydrated(true);
   }, []);
 
-  // Auto-save on every change after hydration
+  // Auto-save to localStorage on every change after hydration
   useEffect(() => {
     if (!hydrated) return;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
     } catch {
-      /* quota or privacy mode — silently ignore */
+      /* quota or privacy mode */
     }
   }, [transactions, hydrated]);
+
+  // Sync with Cloud when user logs in (one-time merge)
+  useEffect(() => {
+    if (!authHydrated || !hydrated) return;
+    if (!user) {
+      lastSyncedUserId.current = null;
+      return;
+    }
+    if (lastSyncedUserId.current === user.id) return;
+    lastSyncedUserId.current = user.id;
+
+    (async () => {
+      setSyncing(true);
+      try {
+        const { data: remote } = await supabase
+          .from("transactions")
+          .select("client_id,title,amount,kind,category,date,status")
+          .eq("user_id", user.id);
+
+        const remoteIds = new Set((remote ?? []).map((r) => r.client_id));
+        const localToPush = transactions.filter((t) => !remoteIds.has(t.id));
+
+        if (localToPush.length > 0) {
+          await supabase
+            .from("transactions")
+            .upsert(
+              localToPush.map((t) => txToRow(t, user.id)),
+              { onConflict: "user_id,client_id" },
+            );
+        }
+
+        // Merged set: remote + local-only
+        const mergedRemote = (remote ?? []) as CloudRow[];
+        const merged = [
+          ...mergedRemote.map(rowToTx),
+          ...localToPush, // already pushed; included for immediate UI consistency
+        ];
+        // Dedupe by id
+        const byId = new Map<string, Transaction>();
+        merged.forEach((t) => byId.set(t.id, t));
+        setTransactions(Array.from(byId.values()));
+      } catch (e) {
+        console.warn("Cloud sync failed", e);
+      } finally {
+        setSyncing(false);
+      }
+    })();
+  }, [user, authHydrated, hydrated, transactions]);
 
   const completeOnboarding = useCallback(() => {
     try {
@@ -55,27 +143,108 @@ export function useFinance() {
     setOnboarded(true);
   }, []);
 
-  const addTransaction = useCallback((tx: Omit<Transaction, "id" | "date" | "status">) => {
-    setTransactions((prev) => [
-      {
+  const addTransaction = useCallback(
+    (tx: Omit<Transaction, "id" | "date" | "status">) => {
+      const newTx: Transaction = {
         ...tx,
         id: `t${Date.now()}`,
         date: new Date().toISOString(),
         status: "paid",
-      },
-      ...prev,
-    ]);
-  }, []);
+      };
+      setTransactions((prev) => [newTx, ...prev]);
+      if (user) {
+        supabase
+          .from("transactions")
+          .upsert([txToRow(newTx, user.id)], { onConflict: "user_id,client_id" })
+          .then(({ error }) => {
+            if (error) console.warn("Cloud add failed", error);
+          });
+      }
+    },
+    [user],
+  );
 
-  const markPaid = useCallback((id: string) => {
-    setTransactions((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: "paid", date: new Date().toISOString() } : t)),
-    );
-  }, []);
+  const markPaid = useCallback(
+    (id: string) => {
+      const date = new Date().toISOString();
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: "paid", date } : t)),
+      );
+      if (user) {
+        supabase
+          .from("transactions")
+          .update({ status: "paid", date })
+          .eq("user_id", user.id)
+          .eq("client_id", id)
+          .then(({ error }) => {
+            if (error) console.warn("Cloud markPaid failed", error);
+          });
+      }
+    },
+    [user],
+  );
 
-  const removeTransaction = useCallback((id: string) => {
-    setTransactions((prev) => prev.filter((t) => t.id !== id));
-  }, []);
+  const removeTransaction = useCallback(
+    (id: string) => {
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+      if (user) {
+        supabase
+          .from("transactions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("client_id", id)
+          .then(({ error }) => {
+            if (error) console.warn("Cloud delete failed", error);
+          });
+      }
+    },
+    [user],
+  );
+
+  const updateTransaction = useCallback(
+    (id: string, patch: Partial<Transaction>) => {
+      setTransactions((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+      );
+      if (user) {
+        const cloudPatch: Partial<CloudRow> = {};
+        if (patch.title !== undefined) cloudPatch.title = patch.title;
+        if (patch.amount !== undefined) cloudPatch.amount = patch.amount;
+        if (patch.kind !== undefined) cloudPatch.kind = patch.kind;
+        if (patch.category !== undefined) cloudPatch.category = patch.category;
+        if (patch.date !== undefined) cloudPatch.date = patch.date;
+        if (patch.status !== undefined) cloudPatch.status = patch.status;
+        supabase
+          .from("transactions")
+          .update(cloudPatch)
+          .eq("user_id", user.id)
+          .eq("client_id", id)
+          .then(({ error }) => {
+            if (error) console.warn("Cloud update failed", error);
+          });
+      }
+    },
+    [user],
+  );
+
+  const replaceAllTransactions = useCallback(
+    async (next: Transaction[]) => {
+      setTransactions(next);
+      if (user) {
+        try {
+          await supabase.from("transactions").delete().eq("user_id", user.id);
+          if (next.length > 0) {
+            await supabase
+              .from("transactions")
+              .insert(next.map((t) => txToRow(t, user.id)));
+          }
+        } catch (e) {
+          console.warn("Cloud replaceAll failed", e);
+        }
+      }
+    },
+    [user],
+  );
 
   const stats = useMemo(() => {
     const now = new Date();
@@ -109,7 +278,6 @@ export function useFinance() {
     const freeMoney = Math.max(0, projectedBalance);
     const dailyFree = freeMoney / daysLeft;
 
-    // Atypical spend detection: variable spend today vs avg of last 7 days
     const dayMs = 24 * 60 * 60 * 1000;
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const todaySpend = transactions
@@ -138,7 +306,6 @@ export function useFinance() {
     };
   }, [transactions]);
 
-  // Build streamgraph series: cumulative actual vs projected, day-by-day for current month
   const flowSeries = useMemo(() => {
     const now = new Date();
     const som = startOfMonth(now);
@@ -180,10 +347,13 @@ export function useFinance() {
     addTransaction,
     markPaid,
     removeTransaction,
+    updateTransaction,
+    replaceAllTransactions,
     stats,
     flowSeries,
     hydrated,
     onboarded,
     completeOnboarding,
+    syncing,
   };
 }

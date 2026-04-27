@@ -12,9 +12,13 @@ import {
 } from "@/components/finance/QuickActionFab";
 import { FixedManager } from "@/components/finance/FixedManager";
 import { StatCards } from "@/components/finance/StatCards";
+import { CategoryChart } from "@/components/finance/CategoryChart";
 import { Onboarding } from "@/components/finance/Onboarding";
 import { UpdatePrompt } from "@/components/finance/UpdatePrompt";
 import { ProfileSheet } from "@/components/finance/ProfileSheet";
+import { EditTransactionSheet } from "@/components/finance/EditTransactionSheet";
+import { BiometricGate } from "@/components/finance/BiometricGate";
+import type { Transaction } from "@/lib/finance-data";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -41,31 +45,32 @@ function Index() {
     addTransaction,
     markPaid,
     removeTransaction,
+    updateTransaction,
+    replaceAllTransactions,
     stats,
     hydrated,
     onboarded,
     completeOnboarding,
   } = useFinance();
   const { profile, updateProfile } = useProfile();
-  const [tab, setTab] = useState<"timeline" | "fixed">("timeline");
+  const [tab, setTab] = useState<"timeline" | "fixed" | "categories">("timeline");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [editing, setEditing] = useState<Transaction | null>(null);
   const fabRef = useRef<QuickActionFabHandle>(null);
 
-  // Apply warning theme on the root
   useEffect(() => {
     const root = document.documentElement;
     if (stats.atypical) root.classList.add("theme-warning");
     else root.classList.remove("theme-warning");
   }, [stats.atypical]);
 
-  // Wait for hydration to avoid SSR/CSR flicker on the onboarding gate
   if (!hydrated) {
     return <div className="min-h-screen bg-background" />;
   }
 
   if (!onboarded) {
     return (
-      <>
+      <BiometricGate>
         <UpdatePrompt />
         <Onboarding
           income={stats.incomePaid + stats.incomePending}
@@ -75,7 +80,6 @@ function Index() {
           onStart={completeOnboarding}
           onAddIncome={() => {
             completeOnboarding();
-            // open after onboarding state flush
             setTimeout(() => fabRef.current?.open("income"), 50);
           }}
           onAddExpense={() => {
@@ -83,12 +87,12 @@ function Index() {
             setTimeout(() => fabRef.current?.open("expense"), 50);
           }}
         />
-      </>
+      </BiometricGate>
     );
   }
 
   return (
-    <>
+    <BiometricGate>
       <UpdatePrompt />
       <main
         className="mx-auto min-h-screen w-full max-w-2xl px-4 sm:px-5"
@@ -97,7 +101,6 @@ function Index() {
           paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 9.5rem)",
         }}
       >
-        {/* Header */}
         <header className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
           <button
             onClick={() => setProfileOpen(true)}
@@ -135,7 +138,6 @@ function Index() {
           </AnimatePresence>
         </header>
 
-        {/* Progress card */}
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -149,7 +151,6 @@ function Index() {
           />
         </motion.section>
 
-        {/* Stat cards */}
         <section className="mt-5">
           <StatCards
             income={stats.incomePaid + stats.incomePending}
@@ -161,19 +162,19 @@ function Index() {
           />
         </section>
 
-        {/* Tabs */}
         <section className="mt-8">
-          <div className="mb-5 flex w-full rounded-2xl bg-muted/40 p-1 ring-1 ring-border sm:inline-flex sm:w-auto">
+          <div className="mb-5 flex w-full rounded-2xl bg-muted/40 p-1 ring-1 ring-border">
             {(
               [
                 { k: "timeline", label: "Timeline", short: "Timeline" },
-                { k: "fixed", label: "Assinaturas & Receitas", short: "Fixos" },
+                { k: "fixed", label: "Fixos", short: "Fixos" },
+                { k: "categories", label: "Categorias", short: "Categorias" },
               ] as const
             ).map((t) => (
               <button
                 key={t.k}
                 onClick={() => setTab(t.k)}
-                className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-medium transition sm:flex-none sm:px-4 ${
+                className={`relative flex-1 rounded-xl px-3 py-2 text-xs font-medium transition ${
                   tab === t.k ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -185,15 +186,14 @@ function Index() {
                   />
                 )}
                 <span className={`relative ${tab === t.k ? "text-primary-foreground" : ""}`}>
-                  <span className="sm:hidden">{t.short}</span>
-                  <span className="hidden sm:inline">{t.label}</span>
+                  {t.short}
                 </span>
               </button>
             ))}
           </div>
 
           <AnimatePresence mode="wait">
-            {tab === "timeline" ? (
+            {tab === "timeline" && (
               <motion.div
                 key="timeline"
                 initial={{ opacity: 0, y: 8 }}
@@ -201,9 +201,14 @@ function Index() {
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.2 }}
               >
-                <Timeline transactions={transactions} onRemove={removeTransaction} />
+                <Timeline
+                  transactions={transactions}
+                  onRemove={removeTransaction}
+                  onEdit={setEditing}
+                />
               </motion.div>
-            ) : (
+            )}
+            {tab === "fixed" && (
               <motion.div
                 key="fixed"
                 initial={{ opacity: 0, y: 8 }}
@@ -216,6 +221,17 @@ function Index() {
                   onConfirm={markPaid}
                   onRemove={removeTransaction}
                 />
+              </motion.div>
+            )}
+            {tab === "categories" && (
+              <motion.div
+                key="categories"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <CategoryChart transactions={transactions} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -238,7 +254,16 @@ function Index() {
         onOpenChange={setProfileOpen}
         profile={profile}
         onUpdate={updateProfile}
+        transactions={transactions}
+        onImportTransactions={replaceAllTransactions}
       />
-    </>
+
+      <EditTransactionSheet
+        tx={editing}
+        open={!!editing}
+        onOpenChange={(o) => !o && setEditing(null)}
+        onSave={updateTransaction}
+      />
+    </BiometricGate>
   );
 }

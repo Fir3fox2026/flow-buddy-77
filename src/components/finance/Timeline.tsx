@@ -42,6 +42,7 @@ function formatLabel(date: Date) {
 interface TimelineProps {
   transactions: Transaction[];
   onRemove?: (id: string) => void;
+  onEdit?: (tx: Transaction) => void;
 }
 
 const SWIPE_REVEAL = -84;
@@ -51,9 +52,10 @@ interface RowProps {
   tx: Transaction;
   index: number;
   onAskRemove: (tx: Transaction) => void;
+  onEdit?: (tx: Transaction) => void;
 }
 
-function TimelineRow({ tx, index, onAskRemove }: RowProps) {
+function TimelineRow({ tx, index, onAskRemove, onEdit }: RowProps) {
   const x = useMotionValue(0);
   const [revealed, setRevealed] = useState(false);
   const Icon = iconMap[tx.category] ?? ShoppingBag;
@@ -95,7 +97,9 @@ function TimelineRow({ tx, index, onAskRemove }: RowProps) {
           if (revealed) {
             x.set(0);
             setRevealed(false);
+            return;
           }
+          onEdit?.(tx);
         }}
         initial={{ opacity: 0, x: -8 }}
         animate={{ opacity: future ? 0.55 : 1, x: 0 }}
@@ -139,7 +143,7 @@ function TimelineRow({ tx, index, onAskRemove }: RowProps) {
   );
 }
 
-export function Timeline({ transactions, onRemove }: TimelineProps) {
+export function Timeline({ transactions, onRemove, onEdit }: TimelineProps) {
   const sorted = [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
@@ -151,7 +155,7 @@ export function Timeline({ transactions, onRemove }: TimelineProps) {
       <ul className="space-y-2">
         <AnimatePresence initial={false}>
           {sorted.map((t, i) => (
-            <TimelineRow key={t.id} tx={t} index={i} onAskRemove={setPending} />
+            <TimelineRow key={t.id} tx={t} index={i} onAskRemove={setPending} onEdit={onEdit} />
           ))}
         </AnimatePresence>
       </ul>
