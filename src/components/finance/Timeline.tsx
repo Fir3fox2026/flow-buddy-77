@@ -97,7 +97,9 @@ function TimelineRow({ tx, index, onAskRemove, onEdit }: RowProps) {
           if (revealed) {
             x.set(0);
             setRevealed(false);
+            return;
           }
+          onEdit?.(tx);
         }}
         initial={{ opacity: 0, x: -8 }}
         animate={{ opacity: future ? 0.55 : 1, x: 0 }}
@@ -141,7 +143,7 @@ function TimelineRow({ tx, index, onAskRemove, onEdit }: RowProps) {
   );
 }
 
-export function Timeline({ transactions, onRemove }: TimelineProps) {
+export function Timeline({ transactions, onRemove, onEdit }: TimelineProps) {
   const sorted = [...transactions].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
   );
@@ -153,7 +155,7 @@ export function Timeline({ transactions, onRemove }: TimelineProps) {
       <ul className="space-y-2">
         <AnimatePresence initial={false}>
           {sorted.map((t, i) => (
-            <TimelineRow key={t.id} tx={t} index={i} onAskRemove={setPending} />
+            <TimelineRow key={t.id} tx={t} index={i} onAskRemove={setPending} onEdit={onEdit} />
           ))}
         </AnimatePresence>
       </ul>
