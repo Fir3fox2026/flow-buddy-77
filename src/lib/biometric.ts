@@ -19,10 +19,10 @@ export function isLockEnabled(): boolean {
   return window.localStorage.getItem(KEY_ENABLED) === "1";
 }
 
-function randomChallenge(): Uint8Array {
+function randomChallenge(): ArrayBuffer {
   const a = new Uint8Array(32);
   crypto.getRandomValues(a);
-  return a;
+  return a.buffer.slice(a.byteOffset, a.byteOffset + a.byteLength) as ArrayBuffer;
 }
 
 function bufToB64(buf: ArrayBuffer): string {
