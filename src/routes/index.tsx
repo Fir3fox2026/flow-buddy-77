@@ -263,6 +263,8 @@ function Index() {
         onUpdate={updateProfile}
         transactions={transactions}
         onImportTransactions={replaceAllTransactions}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <EditTransactionSheet
