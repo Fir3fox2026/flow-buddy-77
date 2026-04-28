@@ -18,6 +18,8 @@ import { UpdatePrompt } from "@/components/finance/UpdatePrompt";
 import { ProfileSheet } from "@/components/finance/ProfileSheet";
 import { EditTransactionSheet } from "@/components/finance/EditTransactionSheet";
 import { BiometricGate } from "@/components/finance/BiometricGate";
+import { CloudStatusBanner } from "@/components/finance/CloudStatusBanner";
+import { PendingSyncSheet } from "@/components/finance/PendingSyncSheet";
 import type { Transaction } from "@/lib/finance-data";
 
 export const Route = createFileRoute("/")({
