@@ -65,7 +65,28 @@ function Index() {
   const [pendingOpen, setPendingOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const fabRef = useRef<QuickActionFabHandle>(null);
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, getThemeColor } = useTheme();
+  const [themeTransition, setThemeTransition] = useState<ThemeTransitionState | null>(null);
+
+  const handleToggleTheme = (origin?: { x: number; y: number }) => {
+    const next = theme === "light" ? "dark" : "light";
+    // Respect reduced motion
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReduced || !origin) {
+      setTheme(next);
+      return;
+    }
+    setThemeTransition({
+      key: Date.now(),
+      x: origin.x,
+      y: origin.y,
+      color: getThemeColor(next),
+    });
+    // Swap theme mid-expansion so the circle reveals the new background
+    window.setTimeout(() => setTheme(next), 350);
+  };
 
   useEffect(() => {
     const root = document.documentElement;
