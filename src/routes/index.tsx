@@ -289,7 +289,7 @@ function Index() {
         transactions={transactions}
         onImportTransactions={replaceAllTransactions}
         theme={theme}
-        onToggleTheme={toggleTheme}
+        onToggleTheme={handleToggleTheme}
       />
 
       <EditTransactionSheet
@@ -300,6 +300,11 @@ function Index() {
       />
 
       <PendingSyncSheet open={pendingOpen} onOpenChange={setPendingOpen} />
+
+      <ThemeTransitionOverlay
+        state={themeTransition}
+        onDone={() => setThemeTransition(null)}
+      />
     </BiometricGate>
   );
 }
