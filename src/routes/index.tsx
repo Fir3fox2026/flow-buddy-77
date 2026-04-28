@@ -269,6 +269,8 @@ function Index() {
         onOpenChange={(o) => !o && setEditing(null)}
         onSave={updateTransaction}
       />
+
+      <PendingSyncSheet open={pendingOpen} onOpenChange={setPendingOpen} />
     </BiometricGate>
   );
 }
