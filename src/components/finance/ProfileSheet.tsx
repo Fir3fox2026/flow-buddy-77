@@ -10,6 +10,8 @@ import {
   LogOut,
   Cloud,
   CloudOff,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   Sheet,
@@ -48,6 +50,8 @@ interface ProfileSheetProps {
   onUpdate: (patch: Partial<Profile>) => void;
   transactions: Transaction[];
   onImportTransactions: (next: Transaction[]) => void | Promise<void>;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }
 
 export function ProfileSheet({
@@ -57,6 +61,8 @@ export function ProfileSheet({
   onUpdate,
   transactions,
   onImportTransactions,
+  theme,
+  onToggleTheme,
 }: ProfileSheetProps) {
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState(profile.avatar);
