@@ -9,6 +9,7 @@ import {
   type Transaction,
 } from "@/lib/finance-data";
 import { useAuth } from "./use-auth";
+import { queuePending, getPending, clearPending } from "./use-cloud-status";
 
 const STORAGE_KEY = "fluxo:transactions:v1";
 const ONBOARDING_KEY = "fluxo:onboarding:v1";
