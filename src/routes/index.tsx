@@ -20,6 +20,7 @@ import { EditTransactionSheet } from "@/components/finance/EditTransactionSheet"
 import { BiometricGate } from "@/components/finance/BiometricGate";
 import { CloudStatusBanner } from "@/components/finance/CloudStatusBanner";
 import { PendingSyncSheet } from "@/components/finance/PendingSyncSheet";
+import { useTheme } from "@/hooks/use-theme";
 import type { Transaction } from "@/lib/finance-data";
 
 export const Route = createFileRoute("/")({
@@ -60,6 +61,7 @@ function Index() {
   const [pendingOpen, setPendingOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const fabRef = useRef<QuickActionFabHandle>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -261,6 +263,8 @@ function Index() {
         onUpdate={updateProfile}
         transactions={transactions}
         onImportTransactions={replaceAllTransactions}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <EditTransactionSheet

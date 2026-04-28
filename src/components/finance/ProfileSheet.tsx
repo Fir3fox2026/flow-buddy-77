@@ -10,6 +10,8 @@ import {
   LogOut,
   Cloud,
   CloudOff,
+  Sun,
+  Moon,
 } from "lucide-react";
 import {
   Sheet,
@@ -48,6 +50,8 @@ interface ProfileSheetProps {
   onUpdate: (patch: Partial<Profile>) => void;
   transactions: Transaction[];
   onImportTransactions: (next: Transaction[]) => void | Promise<void>;
+  theme: "light" | "dark";
+  onToggleTheme: () => void;
 }
 
 export function ProfileSheet({
@@ -57,6 +61,8 @@ export function ProfileSheet({
   onUpdate,
   transactions,
   onImportTransactions,
+  theme,
+  onToggleTheme,
 }: ProfileSheetProps) {
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState(profile.avatar);
@@ -352,6 +358,40 @@ export function ProfileSheet({
               </button>
             </section>
           )}
+
+          {/* Appearance */}
+          <section className="mt-6">
+            <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+              Aparência
+            </p>
+            <button
+              onClick={onToggleTheme}
+              className="flex w-full items-center gap-3 rounded-2xl bg-muted/40 p-4 text-left ring-1 ring-border transition hover:bg-muted/60"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
+                {theme === "dark" ? <Moon size={18} /> : <Sun size={18} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold">
+                  {theme === "dark" ? "Modo escuro" : "Modo claro"}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  Toque para alternar
+                </p>
+              </div>
+              <div
+                className={`relative h-6 w-10 shrink-0 rounded-full transition ${
+                  theme === "dark" ? "bg-primary" : "bg-muted-foreground/30"
+                }`}
+              >
+                <motion.span
+                  className="absolute top-0.5 h-5 w-5 rounded-full bg-background"
+                  animate={{ left: theme === "dark" ? "1.125rem" : "0.125rem" }}
+                  transition={{ type: "spring", stiffness: 320, damping: 26 }}
+                />
+              </div>
+            </button>
+          </section>
 
           {/* Backup */}
           <section className="mt-6">
