@@ -31,9 +31,14 @@ function save(ops: PendingOp[]) {
   }
 }
 
-export function queuePending(op: Omit<PendingOp, "queuedAt"> & { queuedAt?: string }) {
+type PendingOpInput =
+  | { type: "upsert"; tx: Transaction }
+  | { type: "update"; id: string; patch: Partial<Transaction> }
+  | { type: "delete"; id: string; title?: string };
+
+export function queuePending(op: PendingOpInput) {
   const ops = load();
-  ops.push({ ...op, queuedAt: op.queuedAt ?? new Date().toISOString() } as PendingOp);
+  ops.push({ ...op, queuedAt: new Date().toISOString() } as PendingOp);
   save(ops);
 }
 
