@@ -51,7 +51,7 @@ interface ProfileSheetProps {
   transactions: Transaction[];
   onImportTransactions: (next: Transaction[]) => void | Promise<void>;
   theme: "light" | "dark";
-  onToggleTheme: () => void;
+  onToggleTheme: (origin?: { x: number; y: number }) => void;
 }
 
 export function ProfileSheet({
@@ -365,7 +365,13 @@ export function ProfileSheet({
               Aparência
             </p>
             <button
-              onClick={onToggleTheme}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                onToggleTheme({
+                  x: rect.left + rect.width / 2,
+                  y: rect.top + rect.height / 2,
+                });
+              }}
               className="flex w-full items-center gap-3 rounded-2xl bg-muted/40 p-4 text-left ring-1 ring-border transition hover:bg-muted/60"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
