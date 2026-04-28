@@ -203,6 +203,24 @@
     min-height: 100vh;
     font-feature-settings: "cv11", "ss01";
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.5s ease, color 0.5s ease;
+  }
+
+  /* Smooth color transitions when toggling theme */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-duration: 0.4s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Don't slow down interactive transforms / opacity / etc. */
+  button,
+  a,
+  [role="button"] {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow,
+      transform, opacity;
   }
 }
 
