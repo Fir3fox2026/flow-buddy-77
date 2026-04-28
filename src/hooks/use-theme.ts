@@ -43,5 +43,10 @@ export function useTheme() {
     setTheme(theme === "light" ? "dark" : "light");
   }, [theme, setTheme]);
 
-  return { theme, setTheme, toggleTheme };
+  /** Returns the solid background color of the requested theme — useful for transitions. */
+  const getThemeColor = useCallback((t: Theme) => {
+    return t === "light" ? "#f5f7fa" : "#0d1218";
+  }, []);
+
+  return { theme, setTheme, toggleTheme, getThemeColor };
 }
