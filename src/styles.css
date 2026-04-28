@@ -54,7 +54,8 @@
 }
 
 /* Default to dark theme — this app is dark-mode first */
-:root {
+:root,
+.dark {
   --radius: 1rem;
 
   --background: oklch(0.18 0.02 250);
