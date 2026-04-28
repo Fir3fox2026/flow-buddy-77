@@ -57,6 +57,7 @@ function Index() {
   const { profile, updateProfile } = useProfile();
   const [tab, setTab] = useState<"timeline" | "fixed" | "categories">("timeline");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const fabRef = useRef<QuickActionFabHandle>(null);
 
