@@ -176,6 +176,7 @@ export function useFinance() {
       setTransactions((prev) =>
         prev.map((t) => (t.id === id ? { ...t, status: "paid", date } : t)),
       );
+      const patch: Partial<Transaction> = { status: "paid", date };
       if (user) {
         supabase
           .from("transactions")
@@ -183,8 +184,13 @@ export function useFinance() {
           .eq("user_id", user.id)
           .eq("client_id", id)
           .then(({ error }) => {
-            if (error) console.warn("Cloud markPaid failed", error);
+            if (error) {
+              console.warn("Cloud markPaid failed", error);
+              queuePending({ type: "update", id, patch });
+            }
           });
+      } else {
+        queuePending({ type: "update", id, patch });
       }
     },
     [user],
@@ -192,6 +198,7 @@ export function useFinance() {
 
   const removeTransaction = useCallback(
     (id: string) => {
+      const removed = transactions.find((t) => t.id === id);
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       if (user) {
         supabase
@@ -200,11 +207,16 @@ export function useFinance() {
           .eq("user_id", user.id)
           .eq("client_id", id)
           .then(({ error }) => {
-            if (error) console.warn("Cloud delete failed", error);
+            if (error) {
+              console.warn("Cloud delete failed", error);
+              queuePending({ type: "delete", id, title: removed?.title });
+            }
           });
+      } else {
+        queuePending({ type: "delete", id, title: removed?.title });
       }
     },
-    [user],
+    [user, transactions],
   );
 
   const updateTransaction = useCallback(
@@ -226,8 +238,13 @@ export function useFinance() {
           .eq("user_id", user.id)
           .eq("client_id", id)
           .then(({ error }) => {
-            if (error) console.warn("Cloud update failed", error);
+            if (error) {
+              console.warn("Cloud update failed", error);
+              queuePending({ type: "update", id, patch });
+            }
           });
+      } else {
+        queuePending({ type: "update", id, patch });
       }
     },
     [user],
