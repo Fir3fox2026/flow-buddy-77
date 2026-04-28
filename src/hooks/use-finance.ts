@@ -158,8 +158,13 @@ export function useFinance() {
           .from("transactions")
           .upsert([txToRow(newTx, user.id)], { onConflict: "user_id,client_id" })
           .then(({ error }) => {
-            if (error) console.warn("Cloud add failed", error);
+            if (error) {
+              console.warn("Cloud add failed", error);
+              queuePending({ type: "upsert", tx: newTx });
+            }
           });
+      } else {
+        queuePending({ type: "upsert", tx: newTx });
       }
     },
     [user],
