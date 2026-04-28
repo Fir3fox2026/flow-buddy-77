@@ -141,6 +141,8 @@ function Index() {
           </AnimatePresence>
         </header>
 
+        <CloudStatusBanner onOpenPending={() => setPendingOpen(true)} />
+
         <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
