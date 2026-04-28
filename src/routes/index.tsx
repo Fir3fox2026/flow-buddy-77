@@ -18,6 +18,8 @@ import { UpdatePrompt } from "@/components/finance/UpdatePrompt";
 import { ProfileSheet } from "@/components/finance/ProfileSheet";
 import { EditTransactionSheet } from "@/components/finance/EditTransactionSheet";
 import { BiometricGate } from "@/components/finance/BiometricGate";
+import { CloudStatusBanner } from "@/components/finance/CloudStatusBanner";
+import { PendingSyncSheet } from "@/components/finance/PendingSyncSheet";
 import type { Transaction } from "@/lib/finance-data";
 
 export const Route = createFileRoute("/")({
@@ -55,6 +57,7 @@ function Index() {
   const { profile, updateProfile } = useProfile();
   const [tab, setTab] = useState<"timeline" | "fixed" | "categories">("timeline");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const fabRef = useRef<QuickActionFabHandle>(null);
 
@@ -137,6 +140,8 @@ function Index() {
             )}
           </AnimatePresence>
         </header>
+
+        <CloudStatusBanner onOpenPending={() => setPendingOpen(true)} />
 
         <motion.section
           initial={{ opacity: 0, y: 12 }}
@@ -264,6 +269,8 @@ function Index() {
         onOpenChange={(o) => !o && setEditing(null)}
         onSave={updateTransaction}
       />
+
+      <PendingSyncSheet open={pendingOpen} onOpenChange={setPendingOpen} />
     </BiometricGate>
   );
 }

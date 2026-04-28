@@ -9,6 +9,7 @@ import {
   type Transaction,
 } from "@/lib/finance-data";
 import { useAuth } from "./use-auth";
+import { queuePending, getPending, clearPending } from "./use-cloud-status";
 
 const STORAGE_KEY = "fluxo:transactions:v1";
 const ONBOARDING_KEY = "fluxo:onboarding:v1";
@@ -134,6 +135,68 @@ export function useFinance() {
     })();
   }, [user, authHydrated, hydrated, transactions]);
 
+  // Drain pending operations queue when online + signed in
+  useEffect(() => {
+    if (!user || !authHydrated || !hydrated) return;
+    const drain = async () => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) return;
+      const ops = getPending();
+      if (ops.length === 0) return;
+      const remaining: typeof ops = [];
+      for (const op of ops) {
+        try {
+          if (op.type === "upsert") {
+            const { error } = await supabase
+              .from("transactions")
+              .upsert([txToRow(op.tx, user.id)], { onConflict: "user_id,client_id" });
+            if (error) remaining.push(op);
+          } else if (op.type === "update") {
+            const cloudPatch: Partial<CloudRow> = {};
+            const p = op.patch;
+            if (p.title !== undefined) cloudPatch.title = p.title;
+            if (p.amount !== undefined) cloudPatch.amount = p.amount;
+            if (p.kind !== undefined) cloudPatch.kind = p.kind;
+            if (p.category !== undefined) cloudPatch.category = p.category;
+            if (p.date !== undefined) cloudPatch.date = p.date;
+            if (p.status !== undefined) cloudPatch.status = p.status;
+            const { error } = await supabase
+              .from("transactions")
+              .update(cloudPatch)
+              .eq("user_id", user.id)
+              .eq("client_id", op.id);
+            if (error) remaining.push(op);
+          } else if (op.type === "delete") {
+            const { error } = await supabase
+              .from("transactions")
+              .delete()
+              .eq("user_id", user.id)
+              .eq("client_id", op.id);
+            if (error) remaining.push(op);
+          }
+        } catch {
+          remaining.push(op);
+        }
+      }
+      if (remaining.length === 0) clearPending();
+      else {
+        try {
+          window.localStorage.setItem("fluxo:pending-sync:v1", JSON.stringify(remaining));
+          window.dispatchEvent(new CustomEvent("fluxo:pending-changed"));
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    drain();
+    const onOnline = () => drain();
+    window.addEventListener("online", onOnline);
+    window.addEventListener("fluxo:pending-changed", drain);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("fluxo:pending-changed", drain);
+    };
+  }, [user, authHydrated, hydrated]);
+
   const completeOnboarding = useCallback(() => {
     try {
       window.localStorage.setItem(ONBOARDING_KEY, "1");
@@ -157,8 +220,13 @@ export function useFinance() {
           .from("transactions")
           .upsert([txToRow(newTx, user.id)], { onConflict: "user_id,client_id" })
           .then(({ error }) => {
-            if (error) console.warn("Cloud add failed", error);
+            if (error) {
+              console.warn("Cloud add failed", error);
+              queuePending({ type: "upsert", tx: newTx });
+            }
           });
+      } else {
+        queuePending({ type: "upsert", tx: newTx });
       }
     },
     [user],
@@ -170,6 +238,7 @@ export function useFinance() {
       setTransactions((prev) =>
         prev.map((t) => (t.id === id ? { ...t, status: "paid", date } : t)),
       );
+      const patch: Partial<Transaction> = { status: "paid", date };
       if (user) {
         supabase
           .from("transactions")
@@ -177,8 +246,13 @@ export function useFinance() {
           .eq("user_id", user.id)
           .eq("client_id", id)
           .then(({ error }) => {
-            if (error) console.warn("Cloud markPaid failed", error);
+            if (error) {
+              console.warn("Cloud markPaid failed", error);
+              queuePending({ type: "update", id, patch });
+            }
           });
+      } else {
+        queuePending({ type: "update", id, patch });
       }
     },
     [user],
@@ -186,6 +260,7 @@ export function useFinance() {
 
   const removeTransaction = useCallback(
     (id: string) => {
+      const removed = transactions.find((t) => t.id === id);
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       if (user) {
         supabase
@@ -194,11 +269,16 @@ export function useFinance() {
           .eq("user_id", user.id)
           .eq("client_id", id)
           .then(({ error }) => {
-            if (error) console.warn("Cloud delete failed", error);
+            if (error) {
+              console.warn("Cloud delete failed", error);
+              queuePending({ type: "delete", id, title: removed?.title });
+            }
           });
+      } else {
+        queuePending({ type: "delete", id, title: removed?.title });
       }
     },
-    [user],
+    [user, transactions],
   );
 
   const updateTransaction = useCallback(
@@ -220,8 +300,13 @@ export function useFinance() {
           .eq("user_id", user.id)
           .eq("client_id", id)
           .then(({ error }) => {
-            if (error) console.warn("Cloud update failed", error);
+            if (error) {
+              console.warn("Cloud update failed", error);
+              queuePending({ type: "update", id, patch });
+            }
           });
+      } else {
+        queuePending({ type: "update", id, patch });
       }
     },
     [user],
