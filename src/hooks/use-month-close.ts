@@ -167,23 +167,23 @@ export function useMonthClose(transactions: Transaction[]) {
       };
 
       if (user) {
+        const payload = {
+          user_id: user.id,
+          month,
+          salary,
+          total_income,
+          total_fixed,
+          total_variable,
+          balance,
+          snapshot: snapshot as unknown as never,
+          closed_at: new Date().toISOString(),
+        };
         const { data, error } = await supabase
           .from("monthly_reports")
-          .upsert(
-            {
-              user_id: user.id,
-              month,
-              salary,
-              total_income,
-              total_fixed,
-              total_variable,
-              balance,
-              snapshot: snapshot as unknown as object,
-              closed_at: new Date().toISOString(),
-            },
-            { onConflict: "user_id,month" },
+          .upsert(payload, { onConflict: "user_id,month" })
+          .select(
+            "id,month,salary,total_income,total_fixed,total_variable,balance,snapshot,closed_at",
           )
-          .select("id,month,salary,total_income,total_fixed,total_variable,balance,snapshot,closed_at")
           .single();
         if (error) {
           console.warn("Failed to save report", error);
