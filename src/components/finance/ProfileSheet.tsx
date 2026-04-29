@@ -67,6 +67,7 @@ export function ProfileSheet({
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState(profile.avatar);
   const [editingName, setEditingName] = useState(false);
+  const [pickingAvatar, setPickingAvatar] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
   const [pendingImport, setPendingImport] = useState<Transaction[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +78,7 @@ export function ProfileSheet({
       setName(profile.name);
       setAvatar(profile.avatar);
       setEditingName(false);
+      setPickingAvatar(false);
       setBiometricOn(isLockEnabled());
     }
   }, [open, profile.name, profile.avatar]);
