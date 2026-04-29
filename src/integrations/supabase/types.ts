@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      monthly_reports: {
+        Row: {
+          balance: number
+          closed_at: string
+          created_at: string
+          id: string
+          month: string
+          salary: number
+          snapshot: Json
+          total_fixed: number
+          total_income: number
+          total_variable: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          closed_at?: string
+          created_at?: string
+          id?: string
+          month: string
+          salary?: number
+          snapshot?: Json
+          total_fixed?: number
+          total_income?: number
+          total_variable?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          closed_at?: string
+          created_at?: string
+          id?: string
+          month?: string
+          salary?: number
+          snapshot?: Json
+          total_fixed?: number
+          total_income?: number
+          total_variable?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar: string

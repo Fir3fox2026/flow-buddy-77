@@ -331,6 +331,25 @@ export function useFinance() {
     [user],
   );
 
+  const addManyTransactions = useCallback(
+    async (items: Transaction[]) => {
+      if (items.length === 0) return;
+      setTransactions((prev) => [...items, ...prev]);
+      if (user) {
+        const { error } = await supabase
+          .from("transactions")
+          .upsert(items.map((t) => txToRow(t, user.id)), { onConflict: "user_id,client_id" });
+        if (error) {
+          console.warn("Cloud addMany failed", error);
+          items.forEach((tx) => queuePending({ type: "upsert", tx }));
+        }
+      } else {
+        items.forEach((tx) => queuePending({ type: "upsert", tx }));
+      }
+    },
+    [user],
+  );
+
   const stats = useMemo(() => {
     const now = new Date();
     const som = startOfMonth(now);
@@ -434,6 +453,7 @@ export function useFinance() {
     removeTransaction,
     updateTransaction,
     replaceAllTransactions,
+    addManyTransactions,
     stats,
     flowSeries,
     hydrated,

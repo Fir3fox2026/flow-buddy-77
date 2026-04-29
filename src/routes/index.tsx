@@ -24,7 +24,10 @@ import {
   ThemeTransitionOverlay,
   type ThemeTransitionState,
 } from "@/components/finance/ThemeTransitionOverlay";
+import { MonthCloseSheet } from "@/components/finance/MonthCloseSheet";
+import { ReportsSheet } from "@/components/finance/ReportsSheet";
 import { useTheme } from "@/hooks/use-theme";
+import { useMonthClose } from "@/hooks/use-month-close";
 import type { Transaction } from "@/lib/finance-data";
 
 export const Route = createFileRoute("/")({
@@ -54,6 +57,7 @@ function Index() {
     removeTransaction,
     updateTransaction,
     replaceAllTransactions,
+    addManyTransactions,
     stats,
     hydrated,
     onboarded,
@@ -63,10 +67,22 @@ function Index() {
   const [tab, setTab] = useState<"timeline" | "fixed" | "categories">("timeline");
   const [profileOpen, setProfileOpen] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [closeMonthOpen, setCloseMonthOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const fabRef = useRef<QuickActionFabHandle>(null);
   const { theme, setTheme, getThemeColor } = useTheme();
   const [themeTransition, setThemeTransition] = useState<ThemeTransitionState | null>(null);
+
+  const { shouldPrompt, snoozeUntilTomorrow, closeMonth, reports } =
+    useMonthClose(transactions);
+
+  // Auto-open the close-month sheet when the hook says it's time
+  useEffect(() => {
+    if (shouldPrompt && hydrated && onboarded) {
+      setCloseMonthOpen(true);
+    }
+  }, [shouldPrompt, hydrated, onboarded]);
 
   const handleToggleTheme = (origin?: { x: number; y: number }) => {
     const next = theme === "light" ? "dark" : "light";
@@ -290,6 +306,7 @@ function Index() {
         onImportTransactions={replaceAllTransactions}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        onOpenReports={() => setReportsOpen(true)}
       />
 
       <EditTransactionSheet
@@ -300,6 +317,17 @@ function Index() {
       />
 
       <PendingSyncSheet open={pendingOpen} onOpenChange={setPendingOpen} />
+
+      <MonthCloseSheet
+        open={closeMonthOpen}
+        onOpenChange={setCloseMonthOpen}
+        transactions={transactions}
+        closeMonth={closeMonth}
+        snoozeUntilTomorrow={snoozeUntilTomorrow}
+        onCarriedTransactions={addManyTransactions}
+      />
+
+      <ReportsSheet open={reportsOpen} onOpenChange={setReportsOpen} reports={reports} />
 
       <ThemeTransitionOverlay
         state={themeTransition}
