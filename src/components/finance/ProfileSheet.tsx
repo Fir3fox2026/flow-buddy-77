@@ -12,6 +12,8 @@ import {
   CloudOff,
   Sun,
   Moon,
+  FileText,
+  ChevronRight,
 } from "lucide-react";
 import {
   Sheet,
