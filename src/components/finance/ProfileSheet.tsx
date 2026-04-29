@@ -52,6 +52,7 @@ interface ProfileSheetProps {
   onImportTransactions: (next: Transaction[]) => void | Promise<void>;
   theme: "light" | "dark";
   onToggleTheme: (origin?: { x: number; y: number }) => void;
+  onOpenReports?: () => void;
 }
 
 export function ProfileSheet({
@@ -63,6 +64,7 @@ export function ProfileSheet({
   onImportTransactions,
   theme,
   onToggleTheme,
+  onOpenReports,
 }: ProfileSheetProps) {
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState(profile.avatar);
