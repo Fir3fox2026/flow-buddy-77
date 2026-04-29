@@ -422,6 +422,33 @@ export function ProfileSheet({
             </button>
           </section>
 
+          {/* Histórico de meses */}
+          {onOpenReports && (
+            <section className="mt-6">
+              <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                Histórico
+              </p>
+              <button
+                onClick={() => {
+                  onOpenChange(false);
+                  setTimeout(() => onOpenReports(), 150);
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl bg-muted/40 p-4 text-left ring-1 ring-border transition hover:bg-muted/60"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
+                  <FileText size={18} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold">Meses fechados</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    Veja e exporte relatórios anteriores
+                  </p>
+                </div>
+                <ChevronRight size={16} className="shrink-0 text-muted-foreground" />
+              </button>
+            </section>
+          )}
+
           {/* Backup */}
           <section className="mt-6">
             <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
