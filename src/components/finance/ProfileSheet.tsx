@@ -173,6 +173,14 @@ export function ProfileSheet({
     toast.success("Você saiu da conta");
   }
 
+  async function handleSwitchAccount() {
+    await signOut();
+    const result = await signInWithGoogle();
+    if (result.error) {
+      toast.error("Não foi possível trocar de conta");
+    }
+  }
+
   const commit = (patch: Partial<Profile>) => onUpdate(patch);
   const biometricSupported = typeof window !== "undefined" && isBiometricSupported();
 
