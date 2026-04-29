@@ -57,6 +57,7 @@ function Index() {
     removeTransaction,
     updateTransaction,
     replaceAllTransactions,
+    addManyTransactions,
     stats,
     hydrated,
     onboarded,
@@ -66,10 +67,22 @@ function Index() {
   const [tab, setTab] = useState<"timeline" | "fixed" | "categories">("timeline");
   const [profileOpen, setProfileOpen] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
+  const [reportsOpen, setReportsOpen] = useState(false);
+  const [closeMonthOpen, setCloseMonthOpen] = useState(false);
   const [editing, setEditing] = useState<Transaction | null>(null);
   const fabRef = useRef<QuickActionFabHandle>(null);
   const { theme, setTheme, getThemeColor } = useTheme();
   const [themeTransition, setThemeTransition] = useState<ThemeTransitionState | null>(null);
+
+  const { shouldPrompt, snoozeUntilTomorrow, closeMonth, reports } =
+    useMonthClose(transactions);
+
+  // Auto-open the close-month sheet when the hook says it's time
+  useEffect(() => {
+    if (shouldPrompt && hydrated && onboarded) {
+      setCloseMonthOpen(true);
+    }
+  }, [shouldPrompt, hydrated, onboarded]);
 
   const handleToggleTheme = (origin?: { x: number; y: number }) => {
     const next = theme === "light" ? "dark" : "light";
