@@ -453,6 +453,7 @@ export function useFinance() {
     removeTransaction,
     updateTransaction,
     replaceAllTransactions,
+    addManyTransactions,
     stats,
     flowSeries,
     hydrated,
