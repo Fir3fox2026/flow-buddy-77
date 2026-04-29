@@ -14,6 +14,7 @@ import {
   Moon,
   FileText,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import {
   Sheet,
@@ -172,6 +173,14 @@ export function ProfileSheet({
     toast.success("Você saiu da conta");
   }
 
+  async function handleSwitchAccount() {
+    await signOut();
+    const result = await signInWithGoogle();
+    if (result.error) {
+      toast.error("Não foi possível trocar de conta");
+    }
+  }
+
   const commit = (patch: Partial<Profile>) => onUpdate(patch);
   const biometricSupported = typeof window !== "undefined" && isBiometricSupported();
 
@@ -299,21 +308,32 @@ export function ProfileSheet({
               Sincronização na nuvem
             </p>
             {user ? (
-              <div className="flex items-center gap-3 rounded-2xl bg-success/10 p-4 ring-1 ring-success/30">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success/20 text-success">
-                  <Cloud size={18} />
+              <div className="rounded-2xl bg-success/10 p-4 ring-1 ring-success/30">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success/20 text-success">
+                    <Cloud size={18} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold">Conectado</p>
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">Conectado</p>
-                  <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    onClick={handleSwitchAccount}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-background/60 px-3 text-xs font-medium text-foreground ring-1 ring-border transition hover:bg-background"
+                  >
+                    <RefreshCw size={14} />
+                    Trocar conta
+                  </button>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-xl bg-muted/50 px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                  >
+                    <LogOut size={14} />
+                    Sair
+                  </button>
                 </div>
-                <button
-                  onClick={handleSignOut}
-                  className="flex h-9 items-center gap-1.5 rounded-xl bg-muted/50 px-3 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-                >
-                  <LogOut size={14} />
-                  Sair
-                </button>
               </div>
             ) : (
               <button
