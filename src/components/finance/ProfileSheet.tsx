@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
   Pencil,
@@ -67,6 +67,7 @@ export function ProfileSheet({
   const [name, setName] = useState(profile.name);
   const [avatar, setAvatar] = useState(profile.avatar);
   const [editingName, setEditingName] = useState(false);
+  const [pickingAvatar, setPickingAvatar] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
   const [pendingImport, setPendingImport] = useState<Transaction[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +78,7 @@ export function ProfileSheet({
       setName(profile.name);
       setAvatar(profile.avatar);
       setEditingName(false);
+      setPickingAvatar(false);
       setBiometricOn(isLockEnabled());
     }
   }, [open, profile.name, profile.avatar]);
@@ -184,15 +186,20 @@ export function ProfileSheet({
 
           {/* Avatar + name */}
           <section className="mt-5 flex items-center gap-4">
-            <motion.div
+            <motion.button
+              type="button"
+              onClick={() => setPickingAvatar((v) => !v)}
               key={avatar}
               initial={{ scale: 0.85 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 320, damping: 20 }}
-              className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-primary text-3xl shadow-glow"
+              className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-primary text-3xl shadow-glow ring-2 ring-transparent transition active:scale-95 data-[active=true]:ring-primary"
+              data-active={pickingAvatar}
+              aria-label="Trocar avatar"
+              aria-expanded={pickingAvatar}
             >
               <span aria-hidden>{avatar}</span>
-            </motion.div>
+            </motion.button>
             <div className="min-w-0 flex-1">
               {editingName ? (
                 <div className="flex items-center gap-2">
@@ -241,34 +248,46 @@ export function ProfileSheet({
           </section>
 
           {/* Avatar picker */}
-          <section className="mt-6">
-            <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
-              Escolha seu avatar
-            </p>
-            <div className="grid grid-cols-6 gap-2">
-              {AVATAR_OPTIONS.map((emoji) => {
-                const active = avatar === emoji;
-                return (
-                  <button
-                    key={emoji}
-                    onClick={() => {
-                      setAvatar(emoji);
-                      commit({ avatar: emoji });
-                    }}
-                    className={`flex aspect-square items-center justify-center rounded-2xl text-2xl ring-1 transition active:scale-95 ${
-                      active
-                        ? "bg-primary/15 ring-primary shadow-glow"
-                        : "bg-muted/40 ring-border hover:bg-muted/60"
-                    }`}
-                    aria-label={`Avatar ${emoji}`}
-                    aria-pressed={active}
-                  >
-                    {emoji}
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          <AnimatePresence initial={false}>
+            {pickingAvatar && (
+              <motion.section
+                key="avatar-picker"
+                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                animate={{ opacity: 1, height: "auto", marginTop: 24 }}
+                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                transition={{ duration: 0.22, ease: "easeOut" }}
+                className="overflow-hidden"
+              >
+                <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Escolha seu avatar
+                </p>
+                <div className="grid grid-cols-6 gap-2">
+                  {AVATAR_OPTIONS.map((emoji) => {
+                    const active = avatar === emoji;
+                    return (
+                      <button
+                        key={emoji}
+                        onClick={() => {
+                          setAvatar(emoji);
+                          commit({ avatar: emoji });
+                          setPickingAvatar(false);
+                        }}
+                        className={`flex aspect-square items-center justify-center rounded-2xl text-2xl ring-1 transition active:scale-95 ${
+                          active
+                            ? "bg-primary/15 ring-primary shadow-glow"
+                            : "bg-muted/40 ring-border hover:bg-muted/60"
+                        }`}
+                        aria-label={`Avatar ${emoji}`}
+                        aria-pressed={active}
+                      >
+                        {emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.section>
+            )}
+          </AnimatePresence>
 
           {/* Cloud sync */}
           <section className="mt-6">
