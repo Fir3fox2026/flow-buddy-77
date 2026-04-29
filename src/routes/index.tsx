@@ -24,7 +24,10 @@ import {
   ThemeTransitionOverlay,
   type ThemeTransitionState,
 } from "@/components/finance/ThemeTransitionOverlay";
+import { MonthCloseSheet } from "@/components/finance/MonthCloseSheet";
+import { ReportsSheet } from "@/components/finance/ReportsSheet";
 import { useTheme } from "@/hooks/use-theme";
+import { useMonthClose } from "@/hooks/use-month-close";
 import type { Transaction } from "@/lib/finance-data";
 
 export const Route = createFileRoute("/")({
