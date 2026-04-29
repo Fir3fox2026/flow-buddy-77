@@ -306,6 +306,7 @@ function Index() {
         onImportTransactions={replaceAllTransactions}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        onOpenReports={() => setReportsOpen(true)}
       />
 
       <EditTransactionSheet
@@ -316,6 +317,17 @@ function Index() {
       />
 
       <PendingSyncSheet open={pendingOpen} onOpenChange={setPendingOpen} />
+
+      <MonthCloseSheet
+        open={closeMonthOpen}
+        onOpenChange={setCloseMonthOpen}
+        transactions={transactions}
+        closeMonth={closeMonth}
+        snoozeUntilTomorrow={snoozeUntilTomorrow}
+        onCarriedTransactions={addManyTransactions}
+      />
+
+      <ReportsSheet open={reportsOpen} onOpenChange={setReportsOpen} reports={reports} />
 
       <ThemeTransitionOverlay
         state={themeTransition}
