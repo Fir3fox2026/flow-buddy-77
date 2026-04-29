@@ -186,15 +186,20 @@ export function ProfileSheet({
 
           {/* Avatar + name */}
           <section className="mt-5 flex items-center gap-4">
-            <motion.div
+            <motion.button
+              type="button"
+              onClick={() => setPickingAvatar((v) => !v)}
               key={avatar}
               initial={{ scale: 0.85 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 320, damping: 20 }}
-              className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-primary text-3xl shadow-glow"
+              className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-primary text-3xl shadow-glow ring-2 ring-transparent transition active:scale-95 data-[active=true]:ring-primary"
+              data-active={pickingAvatar}
+              aria-label="Trocar avatar"
+              aria-expanded={pickingAvatar}
             >
               <span aria-hidden>{avatar}</span>
-            </motion.div>
+            </motion.button>
             <div className="min-w-0 flex-1">
               {editingName ? (
                 <div className="flex items-center gap-2">
