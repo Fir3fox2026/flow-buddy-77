@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { NotificationSettings } from "./NotificationSettings";
 import type { Profile } from "@/hooks/use-profile";
 import type { Transaction } from "@/lib/finance-data";
 import { useAuth } from "@/hooks/use-auth";
@@ -441,6 +442,8 @@ export function ProfileSheet({
               </div>
             </button>
           </section>
+
+          <NotificationSettings />
 
           {/* Histórico de meses */}
           {onOpenReports && (

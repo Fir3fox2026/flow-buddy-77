@@ -406,6 +406,7 @@ export function useFinance() {
       daysLeft,
       dailyFree,
       atypical,
+      todaySpend,
       monthTx,
     };
   }, [transactions]);
