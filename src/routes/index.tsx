@@ -78,6 +78,13 @@ function Index() {
   const { shouldPrompt, snoozeUntilTomorrow, closeMonth, reports } =
     useMonthClose(transactions);
 
+  // Local PWA notifications: due bills, weekly summary, atypical, log reminder
+  useNotifications({
+    transactions,
+    atypical: stats.atypical,
+    variableSpentToday: stats.todaySpend,
+  });
+
   // Auto-open the close-month sheet when the hook says it's time
   useEffect(() => {
     if (shouldPrompt && hydrated && onboarded) {
