@@ -15,6 +15,7 @@ import {
   FileText,
   ChevronRight,
   RefreshCw,
+  Trash2,
 } from "lucide-react";
 import {
   Sheet,
