@@ -519,8 +519,53 @@ export function ProfileSheet({
               onChange={handleFileChange}
             />
           </section>
+
+          {/* Zona de risco */}
+          <section className="mt-6">
+            <p className="mb-2 text-[11px] uppercase tracking-wider text-muted-foreground">
+              Zona de risco
+            </p>
+            <button
+              onClick={() => setConfirmingClear(true)}
+              disabled={transactions.length === 0}
+              className="flex w-full items-center gap-3 rounded-2xl bg-destructive/10 p-4 text-left ring-1 ring-destructive/30 transition hover:bg-destructive/15 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-destructive/20 text-destructive ring-1 ring-destructive/30">
+                <Trash2 size={18} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-destructive">Limpar histórico</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  Apaga todos os {transactions.length} lançamentos
+                </p>
+              </div>
+            </button>
+          </section>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={confirmingClear} onOpenChange={setConfirmingClear}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Limpar todo o histórico?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso vai <span className="font-medium text-foreground">apagar permanentemente</span>{" "}
+              os <span className="font-medium text-foreground">{transactions.length}</span>{" "}
+              lançamentos (fixos, variáveis e renda) deste mês. Os relatórios de meses já fechados
+              não serão afetados. Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleClearHistory}
+            >
+              Limpar tudo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!pendingImport} onOpenChange={(o) => !o && setPendingImport(null)}>
         <AlertDialogContent>
