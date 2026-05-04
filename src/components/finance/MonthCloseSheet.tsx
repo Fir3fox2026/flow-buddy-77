@@ -143,7 +143,8 @@ export function MonthCloseSheet({
           </div>
           <SheetTitle>Fechar {monthLabel}?</SheetTitle>
           <SheetDescription>
-            Vou salvar um relatório com o resumo do mês e transportar o que você usar todo mês.
+            Vou arquivar o resumo no histórico e limpar os lançamentos do mês.
+            Apenas os fixos que você marcar abaixo seguem para o novo mês.
           </SheetDescription>
         </SheetHeader>
 
