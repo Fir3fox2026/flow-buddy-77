@@ -39,7 +39,11 @@ interface MonthCloseSheetProps {
   transactions: Transaction[];
   closeMonth: ReturnType<typeof useMonthClose>["closeMonth"];
   snoozeUntilTomorrow: () => void;
-  onCarriedTransactions: (carried: Transaction[]) => void;
+  /**
+   * Atomically removes the closed month's transactions and inserts the
+   * carried fixed items + salary into the new month.
+   */
+  onSwapTransactions: (removeIds: string[], addItems: Transaction[]) => Promise<void> | void;
 }
 
 export function MonthCloseSheet({
@@ -48,7 +52,7 @@ export function MonthCloseSheet({
   transactions,
   closeMonth,
   snoozeUntilTomorrow,
-  onCarriedTransactions,
+  onSwapTransactions,
 }: MonthCloseSheetProps) {
   const monthToClose = useMemo(() => previousMonthKey(new Date()), []);
   const monthLabel = formatMonthLabel(monthToClose);
@@ -103,8 +107,11 @@ export function MonthCloseSheet({
         snapshot,
         carryFixedIds: Array.from(carryIds),
       });
-      onCarriedTransactions(carriedTx);
-      toast.success(`${monthLabel} fechado e salvo no histórico`);
+      // Remove every transaction from the closed month and insert the
+      // carried fixed items + salary as the new month's starting state.
+      const removeIds = snapshot.map((t) => t.id);
+      await onSwapTransactions(removeIds, carriedTx);
+      toast.success(`${monthLabel} fechado e arquivado no histórico`);
       onOpenChange(false);
     } catch (e) {
       console.warn(e);
@@ -136,7 +143,8 @@ export function MonthCloseSheet({
           </div>
           <SheetTitle>Fechar {monthLabel}?</SheetTitle>
           <SheetDescription>
-            Vou salvar um relatório com o resumo do mês e transportar o que você usar todo mês.
+            Vou arquivar o resumo no histórico e limpar os lançamentos do mês.
+            Apenas os fixos que você marcar abaixo seguem para o novo mês.
           </SheetDescription>
         </SheetHeader>
 

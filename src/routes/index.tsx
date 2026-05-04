@@ -59,6 +59,7 @@ function Index() {
     updateTransaction,
     replaceAllTransactions,
     addManyTransactions,
+    swapTransactions,
     stats,
     hydrated,
     onboarded,
@@ -332,7 +333,7 @@ function Index() {
         transactions={transactions}
         closeMonth={closeMonth}
         snoozeUntilTomorrow={snoozeUntilTomorrow}
-        onCarriedTransactions={addManyTransactions}
+        onSwapTransactions={swapTransactions}
       />
 
       <ReportsSheet open={reportsOpen} onOpenChange={setReportsOpen} reports={reports} />

@@ -350,6 +350,76 @@ export function useFinance() {
     [user],
   );
 
+  /**
+   * Removes a batch of transactions by id (local + cloud). Used by month-close
+   * to wipe the previous month's entries after archiving them in a report.
+   */
+  const removeManyTransactions = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+      const idSet = new Set(ids);
+      setTransactions((prev) => prev.filter((t) => !idSet.has(t.id)));
+      if (user) {
+        const { error } = await supabase
+          .from("transactions")
+          .delete()
+          .eq("user_id", user.id)
+          .in("client_id", ids);
+        if (error) {
+          console.warn("Cloud removeMany failed", error);
+          ids.forEach((id) => queuePending({ type: "delete", id }));
+        }
+      } else {
+        ids.forEach((id) => queuePending({ type: "delete", id }));
+      }
+    },
+    [user],
+  );
+
+  /**
+   * Atomically swaps a set of old transactions for new ones. Used at month
+   * close: removes everything from the closed month and inserts the carried
+   * fixed items + salary for the new month in one shot.
+   */
+  const swapTransactions = useCallback(
+    async (removeIds: string[], addItems: Transaction[]) => {
+      const removeSet = new Set(removeIds);
+      setTransactions((prev) => [
+        ...addItems,
+        ...prev.filter((t) => !removeSet.has(t.id)),
+      ]);
+      if (user) {
+        if (removeIds.length > 0) {
+          const { error: delErr } = await supabase
+            .from("transactions")
+            .delete()
+            .eq("user_id", user.id)
+            .in("client_id", removeIds);
+          if (delErr) {
+            console.warn("Cloud swap delete failed", delErr);
+            removeIds.forEach((id) => queuePending({ type: "delete", id }));
+          }
+        }
+        if (addItems.length > 0) {
+          const { error: insErr } = await supabase
+            .from("transactions")
+            .upsert(
+              addItems.map((t) => txToRow(t, user.id)),
+              { onConflict: "user_id,client_id" },
+            );
+          if (insErr) {
+            console.warn("Cloud swap insert failed", insErr);
+            addItems.forEach((tx) => queuePending({ type: "upsert", tx }));
+          }
+        }
+      } else {
+        removeIds.forEach((id) => queuePending({ type: "delete", id }));
+        addItems.forEach((tx) => queuePending({ type: "upsert", tx }));
+      }
+    },
+    [user],
+  );
+
   const stats = useMemo(() => {
     const now = new Date();
     const som = startOfMonth(now);
@@ -455,6 +525,8 @@ export function useFinance() {
     updateTransaction,
     replaceAllTransactions,
     addManyTransactions,
+    removeManyTransactions,
+    swapTransactions,
     stats,
     flowSeries,
     hydrated,
