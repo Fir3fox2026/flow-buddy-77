@@ -146,6 +146,12 @@ export function ProfileSheet({
     toast.success(`${pendingImport.length} lançamentos importados`);
   }
 
+  async function handleClearHistory() {
+    await onImportTransactions([]);
+    setConfirmingClear(false);
+    toast.success("Histórico de lançamentos limpo");
+  }
+
   async function toggleBiometric() {
     if (biometricOn) {
       disableBiometricLock();
