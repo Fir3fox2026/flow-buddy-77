@@ -77,6 +77,7 @@ export function ProfileSheet({
   const [pickingAvatar, setPickingAvatar] = useState(false);
   const [biometricOn, setBiometricOn] = useState(false);
   const [pendingImport, setPendingImport] = useState<Transaction[] | null>(null);
+  const [confirmingClear, setConfirmingClear] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user, signInWithGoogle, signOut } = useAuth();
 
