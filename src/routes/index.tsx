@@ -206,6 +206,9 @@ function Index() {
             projectedBalance={stats.projectedBalance}
             daysLeft={stats.daysLeft}
             warning={stats.atypical}
+            savingsTotal={transactions
+              .filter((t) => t.category === "savings")
+              .reduce((s, t) => s + t.amount, 0)}
           />
         </motion.section>
 
