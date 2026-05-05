@@ -1,6 +1,6 @@
 export type TxKind = "income" | "fixed" | "variable";
 export type TxStatus = "paid" | "pending";
-export type Category = "food" | "transport" | "leisure" | "other" | "income" | "subscription";
+export type Category = "food" | "transport" | "leisure" | "other" | "income" | "subscription" | "savings";
 
 export interface Transaction {
   id: string;
@@ -42,6 +42,7 @@ export const categoryLabel: Record<Category, string> = {
   other: "Outros",
   income: "Receita",
   subscription: "Assinatura",
+  savings: "Cofrinho",
 };
 
 export function signedAmount(t: Transaction): number {
