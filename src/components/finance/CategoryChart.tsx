@@ -22,6 +22,7 @@ const COLORS: Record<Category, string> = {
   other: "oklch(0.78 0.16 70)",
   subscription: "oklch(0.7 0.17 25)",
   income: "oklch(0.78 0.18 140)",
+  savings: "oklch(0.72 0.16 240)",
 };
 
 const CIRCUMFERENCE = 2 * Math.PI * 56; // r=56

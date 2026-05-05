@@ -1,17 +1,19 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Coffee, Car, Sparkles, ShoppingBag, TrendingUp } from "lucide-react";
+import { Coffee, Car, Sparkles, ShoppingBag, TrendingUp, PiggyBank, CalendarDays, Pencil } from "lucide-react";
 import { useEffect, useImperativeHandle, useState, forwardRef } from "react";
 import { Plus, X } from "lucide-react";
+import { format } from "date-fns";
 import type { Category } from "@/lib/finance-data";
 
 interface QuickActionFabProps {
-  onQuickAdd: (category: Category, amount: number, title: string) => void;
-  onAddIncome?: (amount: number, title: string) => void;
+  onQuickAdd: (category: Category, amount: number, title: string, date?: string) => void;
+  onAddIncome?: (amount: number, title: string, date?: string) => void;
+  onAddSavings?: (amount: number, title: string, date?: string) => void;
   warning?: boolean;
 }
 
 export interface QuickActionFabHandle {
-  open: (mode?: "expense" | "income") => void;
+  open: (mode?: "expense" | "income" | "savings") => void;
 }
 
 const quickItems: { key: Category; label: string; icon: React.ElementType; color: string }[] = [
@@ -21,12 +23,19 @@ const quickItems: { key: Category; label: string; icon: React.ElementType; color
   { key: "other", label: "Outros", icon: ShoppingBag, color: "oklch(0.78 0.16 70)" },
 ];
 
+function nowLocalInput() {
+  return format(new Date(), "yyyy-MM-dd'T'HH:mm");
+}
+
 export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabProps>(
-  function QuickActionFab({ onQuickAdd, onAddIncome, warning }, ref) {
+  function QuickActionFab({ onQuickAdd, onAddIncome, onAddSavings, warning }, ref) {
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<"expense" | "income">("expense");
+  const [mode, setMode] = useState<"expense" | "income" | "savings">("expense");
   const [selected, setSelected] = useState<Category | null>(null);
   const [amount, setAmount] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState(nowLocalInput());
+  const [showDetails, setShowDetails] = useState(false);
 
   useImperativeHandle(ref, () => ({
     open: (m = "expense") => {
@@ -39,6 +48,9 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
     if (!open) {
       setSelected(null);
       setAmount("");
+      setDescription("");
+      setDate(nowLocalInput());
+      setShowDetails(false);
       setMode("expense");
     }
   }, [open]);
@@ -46,20 +58,27 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
   function commit() {
     const v = parseFloat(amount.replace(",", "."));
     if (!v || v <= 0) return;
+    const isoDate = date ? new Date(date).toISOString() : undefined;
 
     if (mode === "income") {
-      onAddIncome?.(v, "Receita");
+      onAddIncome?.(v, description.trim() || "Receita", isoDate);
+      setOpen(false);
+      return;
+    }
+    if (mode === "savings") {
+      onAddSavings?.(v, description.trim() || "Cofrinho", isoDate);
       setOpen(false);
       return;
     }
 
     if (!selected) return;
     const item = quickItems.find((i) => i.key === selected)!;
-    onQuickAdd(selected, v, item.label);
+    onQuickAdd(selected, v, description.trim() || item.label, isoDate);
     setOpen(false);
   }
 
   const isIncome = mode === "income";
+  const isSavings = mode === "savings";
 
   return (
     <>
@@ -83,11 +102,11 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 260, damping: 26 }}
             style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 8.25rem)" }}
-            className="fixed left-1/2 z-50 w-[min(92vw,420px)] -translate-x-1/2 rounded-3xl bg-gradient-card p-5 shadow-elegant ring-1 ring-border sm:p-6"
+            className="fixed left-1/2 z-50 max-h-[78vh] w-[min(92vw,420px)] -translate-x-1/2 overflow-y-auto rounded-3xl bg-gradient-card p-5 shadow-elegant ring-1 ring-border sm:p-6"
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-semibold">
-                {isIncome ? "Registrar receita" : "Registrar gasto"}
+                {isIncome ? "Registrar receita" : isSavings ? "Guardar no cofrinho" : "Registrar gasto"}
               </h3>
               <button
                 onClick={() => setOpen(false)}
@@ -100,11 +119,11 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
 
             {/* Mode toggle */}
             <div className="mb-4 flex rounded-xl bg-muted/40 p-1 ring-1 ring-border">
-              {(["expense", "income"] as const).map((m) => (
+              {(["expense", "income", "savings"] as const).map((m) => (
                 <button
                   key={m}
                   onClick={() => setMode(m)}
-                  className={`relative flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                  className={`relative flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition ${
                     mode === m ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
@@ -115,12 +134,14 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
                       transition={{ type: "spring", stiffness: 320, damping: 30 }}
                     />
                   )}
-                  <span className="relative">{m === "expense" ? "Gasto" : "Receita"}</span>
+                  <span className="relative">
+                    {m === "expense" ? "Gasto" : m === "income" ? "Receita" : "Cofrinho"}
+                  </span>
                 </button>
               ))}
             </div>
 
-            {!isIncome && (
+            {!isIncome && !isSavings && (
               <div className="grid grid-cols-4 gap-3">
                 {quickItems.map((item, i) => {
                   const Icon = item.icon;
@@ -168,8 +189,19 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
               </div>
             )}
 
+            {isSavings && (
+              <div className="flex items-center gap-3 rounded-2xl bg-primary/10 p-3 ring-1 ring-primary/20">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
+                  <PiggyBank size={18} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Sai do saldo do mês e entra no seu cofrinho pessoal.
+                </p>
+              </div>
+            )}
+
             <AnimatePresence>
-              {(isIncome || selected) && (
+              {(isIncome || isSavings || selected) && (
                 <motion.div
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
@@ -184,10 +216,47 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
                       placeholder="0,00"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && commit()}
+                      onKeyDown={(e) => e.key === "Enter" && !showDetails && commit()}
                       className="w-full bg-transparent text-2xl font-semibold tracking-tight outline-none placeholder:text-muted-foreground/50"
                     />
                   </div>
+
+                  {!showDetails ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowDetails(true)}
+                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl py-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-foreground"
+                    >
+                      <Pencil size={12} /> Adicionar descrição e data
+                    </button>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="mt-3 space-y-2 overflow-hidden"
+                    >
+                      <div className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2.5 ring-1 ring-border focus-within:ring-2 focus-within:ring-primary">
+                        <Pencil size={14} className="text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Descrição (ex.: Mercado da semana)"
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground/60"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl bg-muted/40 px-3 py-2.5 ring-1 ring-border focus-within:ring-2 focus-within:ring-primary">
+                        <CalendarDays size={14} className="text-muted-foreground" />
+                        <input
+                          type="datetime-local"
+                          value={date}
+                          onChange={(e) => setDate(e.target.value)}
+                          className="w-full bg-transparent text-sm outline-none"
+                        />
+                      </div>
+                    </motion.div>
+                  )}
+
                   <button
                     onClick={commit}
                     className="mt-3 w-full rounded-2xl bg-gradient-primary py-3 text-sm font-semibold text-primary-foreground shadow-glow transition hover:opacity-95 active:scale-[0.98]"
@@ -217,4 +286,3 @@ export const QuickActionFab = forwardRef<QuickActionFabHandle, QuickActionFabPro
   );
   },
 );
-

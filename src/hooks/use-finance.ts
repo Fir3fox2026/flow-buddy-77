@@ -207,12 +207,12 @@ export function useFinance() {
   }, []);
 
   const addTransaction = useCallback(
-    (tx: Omit<Transaction, "id" | "date" | "status">) => {
+    (tx: Omit<Transaction, "id" | "date" | "status"> & { date?: string; status?: Transaction["status"] }) => {
       const newTx: Transaction = {
         ...tx,
         id: `t${Date.now()}`,
-        date: new Date().toISOString(),
-        status: "paid",
+        date: tx.date ?? new Date().toISOString(),
+        status: tx.status ?? "paid",
       };
       setTransactions((prev) => [newTx, ...prev]);
       if (user) {

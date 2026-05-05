@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   ArrowDownCircle,
   Repeat,
+  PiggyBank,
   Trash2,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +32,7 @@ const iconMap: Record<string, LucideIcon> = {
   other: ShoppingBag,
   income: ArrowDownCircle,
   subscription: Repeat,
+  savings: PiggyBank,
 };
 
 function formatLabel(date: Date) {
