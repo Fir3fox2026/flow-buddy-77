@@ -1,6 +1,8 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PiggyBank, Wallet } from "lucide-react";
 import { formatBRL } from "@/lib/finance-data";
 
 interface MonthProgressBarProps {
@@ -8,6 +10,7 @@ interface MonthProgressBarProps {
   projectedBalance: number;
   daysLeft: number;
   warning?: boolean;
+  savingsTotal?: number;
 }
 
 export function MonthProgressBar({
@@ -15,35 +18,73 @@ export function MonthProgressBar({
   projectedBalance,
   daysLeft,
   warning,
+  savingsTotal = 0,
 }: MonthProgressBarProps) {
+  const [view, setView] = useState<"balance" | "savings">("balance");
   const now = new Date();
   const totalDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
   const dayOfMonth = now.getDate();
   const progress = Math.min(100, (dayOfMonth / totalDays) * 100);
   const monthLabel = format(now, "MMMM 'de' yyyy", { locale: ptBR });
 
+  const isSavings = view === "savings";
+  const displayValue = isSavings ? savingsTotal : currentBalance;
+  const displayLabel = isSavings ? "Cofrinho" : "Saldo atual";
+
   return (
     <div className="w-full">
       <div className="mb-5 flex flex-col gap-3 xs:flex-row xs:items-end xs:justify-between sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">
-            Saldo atual
-          </p>
-          <motion.p
-            key={currentBalance}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-3xl font-semibold tracking-tight text-gradient-primary sm:text-4xl"
-          >
-            {formatBRL(currentBalance)}
-          </motion.p>
+        <div className="relative">
+          <div className="flex items-center gap-2">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">
+              {displayLabel}
+            </p>
+            {/* Floating toggle balloon */}
+            <motion.button
+              type="button"
+              onClick={() => setView(isSavings ? "balance" : "savings")}
+              whileTap={{ scale: 0.92 }}
+              animate={{ y: [0, -2, 0] }}
+              transition={{ y: { duration: 2.4, repeat: Infinity, ease: "easeInOut" } }}
+              className={`group relative flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-medium ring-1 transition ${
+                isSavings
+                  ? "bg-background text-foreground ring-border hover:bg-muted/60"
+                  : "bg-primary/15 text-primary ring-primary/30 hover:bg-primary/20"
+              }`}
+              aria-label={isSavings ? "Ver saldo" : "Ver cofrinho"}
+            >
+              {isSavings ? <Wallet size={11} /> : <PiggyBank size={11} />}
+              <span>{isSavings ? "Saldo" : formatBRL(savingsTotal)}</span>
+              {/* balloon tail */}
+              <span
+                className={`absolute -bottom-1 left-3 h-2 w-2 rotate-45 ${
+                  isSavings ? "bg-background ring-1 ring-border" : "bg-primary/15 ring-1 ring-primary/30"
+                }`}
+                style={{ clipPath: "polygon(0 100%, 100% 0, 100% 100%)" }}
+              />
+            </motion.button>
+          </div>
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={`${view}-${displayValue}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+              className={`text-3xl font-semibold tracking-tight sm:text-4xl ${
+                isSavings ? "text-success" : "text-gradient-primary"
+              }`}
+            >
+              {formatBRL(displayValue)}
+            </motion.p>
+          </AnimatePresence>
         </div>
         <div className="text-left sm:text-right">
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground sm:text-xs">
-            Previsto fim do mês
+            {isSavings ? "Meta livre / mês" : "Previsto fim do mês"}
           </p>
           <p className="text-lg font-medium text-foreground/80 sm:text-xl">
-            {formatBRL(projectedBalance)}
+            {formatBRL(isSavings ? savingsTotal : projectedBalance)}
           </p>
         </div>
       </div>
