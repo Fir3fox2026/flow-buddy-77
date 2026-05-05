@@ -26,6 +26,7 @@ import {
 } from "@/components/finance/ThemeTransitionOverlay";
 import { MonthCloseSheet } from "@/components/finance/MonthCloseSheet";
 import { ReportsSheet } from "@/components/finance/ReportsSheet";
+import { SavingsTab } from "@/components/finance/SavingsTab";
 import { useTheme } from "@/hooks/use-theme";
 import { useMonthClose } from "@/hooks/use-month-close";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -66,7 +67,7 @@ function Index() {
     completeOnboarding,
   } = useFinance();
   const { profile, updateProfile } = useProfile();
-  const [tab, setTab] = useState<"timeline" | "fixed" | "categories">("timeline");
+  const [tab, setTab] = useState<"timeline" | "fixed" | "categories" | "savings">("timeline");
   const [profileOpen, setProfileOpen] = useState(false);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [reportsOpen, setReportsOpen] = useState(false);
@@ -225,7 +226,8 @@ function Index() {
               [
                 { k: "timeline", label: "Timeline", short: "Timeline" },
                 { k: "fixed", label: "Fixos", short: "Fixos" },
-                { k: "categories", label: "Categorias", short: "Categorias" },
+                { k: "categories", label: "Categorias", short: "Categ." },
+                { k: "savings", label: "Cofrinho", short: "Cofre" },
               ] as const
             ).map((t) => (
               <button
@@ -291,6 +293,20 @@ function Index() {
                 <CategoryChart transactions={transactions} />
               </motion.div>
             )}
+            {tab === "savings" && (
+              <motion.div
+                key="savings"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+              >
+                <SavingsTab
+                  transactions={transactions}
+                  onAdd={() => fabRef.current?.open("savings")}
+                />
+              </motion.div>
+            )}
           </AnimatePresence>
         </section>
       </main>
@@ -298,11 +314,14 @@ function Index() {
       <QuickActionFab
         ref={fabRef}
         warning={stats.atypical}
-        onQuickAdd={(category, amount, title) =>
-          addTransaction({ title, amount, category, kind: "variable" })
+        onQuickAdd={(category, amount, title, date) =>
+          addTransaction({ title, amount, category, kind: "variable", date })
         }
-        onAddIncome={(amount, title) =>
-          addTransaction({ title, amount, category: "income", kind: "income" })
+        onAddIncome={(amount, title, date) =>
+          addTransaction({ title, amount, category: "income", kind: "income", date })
+        }
+        onAddSavings={(amount, title, date) =>
+          addTransaction({ title, amount, category: "savings", kind: "variable", date })
         }
       />
 
