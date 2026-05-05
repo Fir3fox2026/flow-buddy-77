@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { Coffee, Car, Sparkles, ShoppingBag, ArrowDownCircle, Repeat } from "lucide-react";
+import { Coffee, Car, Sparkles, ShoppingBag, ArrowDownCircle, Repeat, PiggyBank } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -36,6 +36,7 @@ const CATEGORY_OPTIONS: { key: Category; icon: React.ElementType }[] = [
   { key: "other", icon: ShoppingBag },
   { key: "subscription", icon: Repeat },
   { key: "income", icon: ArrowDownCircle },
+  { key: "savings", icon: PiggyBank },
 ];
 
 function toLocalInput(iso: string): string {
